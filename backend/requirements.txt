@@ -2,5 +2,10 @@ fastapi
 uvicorn[standard]
 pydantic
 python-dotenv
+sqlalchemy
 pytest
 httpx
+alembic
+email-validator
+pwdlib[argon2]
+PyJWT[crypto]

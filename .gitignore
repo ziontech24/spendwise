@@ -20,3 +20,14 @@ __pycache__/
 # IDE
 .vscode/
 .idea/
+# Python virtual environments
+.venv-*/
+**/.venv-*/
+
+# Node.js dependencies
+node_modules/
+**/node_modules/
+
+# Frontend build output
+dist/
+**/dist/
