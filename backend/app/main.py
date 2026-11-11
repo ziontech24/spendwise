@@ -5,6 +5,7 @@ from app.routes.users import router as users_router
 from app.routes.auth import router as auth_router
 from app.database.connection import get_db
 from app.routes.categories import router as categories_router
+from app.routes.income import router as income_router
 
 # Create the FastAPI application
 app = FastAPI(
@@ -16,6 +17,7 @@ app = FastAPI(
 app.include_router(users_router)
 app.include_router(auth_router)
 app.include_router(categories_router)
+app.include_router(income_router)
 
 # Health check endpoint
 @app.get("/health")
