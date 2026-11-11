@@ -1,16 +1,28 @@
 from datetime import datetime
-from typing import Literal
+from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, StringConstraints
 
 
 # Accepted category types
 CategoryType = Literal["income", "expense"]
 
+# Category names must contain at least one non-whitespace character
+CategoryName = Annotated[
+    str,
+    StringConstraints(strip_whitespace=True, min_length=1),
+]
+
 
 # Schema for creating a category
 class CategoryCreate(BaseModel):
-    name: str = Field(min_length=1)
+    name: CategoryName
+    type: CategoryType
+
+
+# Schema for updating a category
+class CategoryUpdate(BaseModel):
+    name: CategoryName
     type: CategoryType
 
 

@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from app.routes.users import router as users_router
 from app.routes.auth import router as auth_router
 from app.database.connection import get_db
-
+from app.routes.categories import router as categories_router
 
 # Create the FastAPI application
 app = FastAPI(
@@ -15,7 +15,7 @@ app = FastAPI(
 # Register API routers
 app.include_router(users_router)
 app.include_router(auth_router)
-
+app.include_router(categories_router)
 
 # Health check endpoint
 @app.get("/health")

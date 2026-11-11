@@ -1,76 +1,81 @@
-from app.database.connection import get_connection
+from app.database.connection import engine
 
 
-db = get_connection()
+def test_database_insertion_and_retrieval():
+    with engine.connect() as connection:
+        transaction = connection.begin()
 
-try:
-    # Start a database transaction
-    db.execute("BEGIN")
+        try:
+            # 1. Insert a test user
+            result = connection.exec_driver_sql(
+                """
+                INSERT INTO users (username, email, password_hash)
+                VALUES (?, ?, ?)
+                """,
+                (
+                    "PytestUser",
+                    "pytest-db-check@example.invalid",
+                    "test_hash",
+                ),
+            )
 
-    # 1. Insert a test user
-    db.execute(
-        """
-        INSERT INTO users (username, email, password_hash)
-        VALUES (?, ?, ?)
-        """,
-        ("TestUser", "test@example.com", "test_hash")
-    )
+            user_id = result.lastrowid
 
-    user_id = db.execute(
-        "SELECT id FROM users WHERE email = ?",
-        ("test@example.com",)
-    ).fetchone()["id"]
+            # 2. Insert an expense category
+            result = connection.exec_driver_sql(
+                """
+                INSERT INTO categories (user_id, name, type)
+                VALUES (?, ?, ?)
+                """,
+                (user_id, "Pytest Food", "expense"),
+            )
 
-    # 2. Insert an expense category
-    db.execute(
-        """
-        INSERT INTO categories (user_id, name, type)
-        VALUES (?, ?, ?)
-        """,
-        (user_id, "Food", "expense")
-    )
+            category_id = result.lastrowid
 
-    category_id = db.execute(
-        "SELECT id FROM categories WHERE name = ? AND user_id = ?",
-        ("Food", user_id)
-    ).fetchone()["id"]
+            # 3. Insert an expense
+            connection.exec_driver_sql(
+                """
+                INSERT INTO expenses (
+                    user_id,
+                    category_id,
+                    amount_minor,
+                    description,
+                    date_spent
+                )
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                (
+                    user_id,
+                    category_id,
+                    25000,
+                    "Lunch",
+                    "2026-11-06",
+                ),
+            )
 
-    # 3. Insert an expense
-    db.execute(
-        """
-        INSERT INTO expenses (
-            user_id,
-            category_id,
-            amount_minor,
-            description,
-            date_spent
-        )
-        VALUES (?, ?, ?, ?, ?)
-        """,
-        (user_id, category_id, 25000, "Lunch", "2026-11-06")
-    )
+            # 4. Retrieve the expense
+            result = connection.exec_driver_sql(
+                """
+                SELECT
+                    expenses.amount_minor,
+                    expenses.description,
+                    categories.name AS category
+                FROM expenses
+                JOIN categories
+                    ON expenses.category_id = categories.id
+                WHERE expenses.user_id = ?
+                """,
+                (user_id,),
+            )
 
-    # 4. Retrieve the expense
-    expense = db.execute(
-        """
-        SELECT
-            expenses.amount_minor,
-            expenses.description,
-            categories.name AS category
-        FROM expenses
-        JOIN categories
-            ON expenses.category_id = categories.id
-        WHERE expenses.user_id = ?
-        """,
-        (user_id,)
-    ).fetchone()
+            expense = result.mappings().first()
 
-    print("Database insertion and retrieval successful!")
-    print(f"Description: {expense['description']}")
-    print(f"Category: {expense['category']}")
-    print(f"Amount: {expense['amount_minor'] / 100:.2f} ETB")
+            # 5. Verify the retrieved information
+            assert expense is not None
+            assert expense["description"] == "Lunch"
+            assert expense["category"] == "Pytest Food"
+            assert expense["amount_minor"] == 25000
 
-finally:
-    # Undo test data so it doesn't remain in your database
-    db.rollback()
-    db.close()
+        finally:
+            # Undo test data so it doesn't remain in the database
+            transaction.rollback()
